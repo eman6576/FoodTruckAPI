@@ -20,6 +20,7 @@ struct ConfigError: LocalizedError {
 
 func getConfig() throws -> Service {
     let appEnv = ConfigurationManager()
+    appEnv.load(.environmentVariables)
     do {
         Log.warning("Attempting to retrieve CF Env")
         let services = appEnv.getServices()

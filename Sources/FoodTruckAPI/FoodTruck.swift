@@ -145,4 +145,108 @@ public class FoodTruck: FoodTruckAPI {
         }
         return trucks
     }
+    
+    // Get specific Food Truck
+    public func getTruck(docId: String, completion: @escaping (FoodTruckItem?, Error?) -> Void) {
+        let couchClient = CouchDBClient(connectionProperties: connectionProps)
+        let database = couchClient.database(dbName)
+        database.retrieve(docId) { (doc, error) in
+            guard let doc = doc,
+                  let docId = doc["id"].string,
+                  let name = doc["name"].string,
+                  let foodType = doc["foodType"].string,
+                  let avgCost = doc["avgcost"].float,
+                  let latitude = doc["latitude"].float,
+                  let longitude = doc["longitude"].float else {
+                    completion(nil, error!)
+                    return
+            }
+            let truckItem = FoodTruckItem(docId: docId, name: name, foodType: foodType, avgCost: avgCost, latitude: latitude, longitude: longitude)
+            completion(truckItem, nil)
+        }
+    }
+    
+    // Add Food Truck
+    public func addTruck(name: String, foodType: String, avgCost: Float, latitude: Float, longtitude: Float, completion: @escaping (FoodTruckItem?, Error?) -> Void) {
+        let json: [String: Any] = [
+            "type": "foodtruck",
+            "name": name,
+            "foodtype": foodType,
+            "avgcost": avgCost,
+            "latitude": latitude,
+            "longitude": longtitude
+        ]
+        let couchClient = CouchDBClient(connectionProperties: connectionProps)
+        let database = couchClient.database(dbName)
+        database.create(JSON(json)) { (id, rev, document, error) in
+            if let id = id {
+                let truckItem = FoodTruckItem(docId: id, name: name, foodType: foodType, avgCost: avgCost, latitude: latitude, longitude: longtitude)
+                completion(truckItem, nil)
+            } else {
+                completion(nil, error!)
+            }
+        }
+    }
+    
+    // Clear all Food Trucks
+    public func clearAll(completion: @escaping (Error?) -> Void) {
+        let couchClient = CouchDBClient(connectionProperties: connectionProps)
+        let database = couchClient.database(dbName)
+        database.queryByView("all_documents", ofDesign: "foodtruckdesign", usingParameters: [.descending(true), .includeDocs(true)]) { (doc, error) in
+            guard let doc = doc else {
+                completion(error!)
+                return
+            }
+            guard let idAndRev = try? self.getIdAndRev(doc) else {
+                completion(error!)
+                return
+            }
+            if idAndRev.count == 0 {
+                completion(nil)
+            } else {
+                for i in 0...idAndRev.count - 1 {
+                    let truck = idAndRev[i]
+                    database.delete(truck.0, rev: truck.1, callback: { (error) in
+                        guard error == nil else {
+                            completion(error!)
+                            return
+                        }
+                    })
+                }
+            }
+        }
+    }
+    
+    func getIdAndRev(_ document: JSON) throws -> [(String, String)] {
+        guard let rows = document["rows"].array else {
+            throw APICollectionError.ParseError
+        }
+        return rows.flatMap {
+            let doc = $0["doc"]
+            let id = doc["_id"].stringValue
+            let rev = doc["_rev"].stringValue
+            return (id, rev)
+        }
+    }
+    
+    // Delete specific Food Truck
+    public func deleteTruck(docId: String, completion: @escaping (Error?) -> Void) {
+        let couchClient = CouchDBClient(connectionProperties: connectionProps)
+        let database = couchClient.database(dbName)
+        database.retrieve(docId) { (doc, error) in
+            guard let doc = doc, error == nil else {
+                completion(error!)
+                return
+            }
+            // TODO: - Fetch all reviews for the truck
+            let rev = doc["_rev"].stringValue
+            database.delete(docId, rev: rev) { (error) in
+                if error != nil {
+                    completion(error!)
+                } else {
+                    completion(nil)
+                }
+            }
+        }
+    }
 }
