@@ -152,9 +152,9 @@ public class FoodTruck: FoodTruckAPI {
         let database = couchClient.database(dbName)
         database.retrieve(docId) { (doc, error) in
             guard let doc = doc,
-                  let docId = doc["id"].string,
+                  let docId = doc["_id"].string,
                   let name = doc["name"].string,
-                  let foodType = doc["foodType"].string,
+                  let foodType = doc["foodtype"].string,
                   let avgCost = doc["avgcost"].float,
                   let latitude = doc["latitude"].float,
                   let longitude = doc["longitude"].float else {
