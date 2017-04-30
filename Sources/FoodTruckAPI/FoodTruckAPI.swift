@@ -15,4 +15,10 @@ public protocol FoodTruckAPI {
     
     // Delete specific Food Truck
     func deleteTruck(docId: String, completion: @escaping (Error?) -> Void)
+    
+    // Update specific Food Truck
+    func updateTruck(docId: String, name: String?, foodType: String?, avgCost: Float?, latitude: Float?, longitude: Float?, completion: @escaping (FoodTruckItem?, Error?) -> Void)
+    
+    // Get count of all Food Trucks
+    func countTrucks(completion: @escaping (Int?, Error?) -> Void)
 }
