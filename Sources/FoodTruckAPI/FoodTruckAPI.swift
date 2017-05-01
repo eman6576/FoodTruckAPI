@@ -21,4 +21,29 @@ public protocol FoodTruckAPI {
     
     // Get count of all Food Trucks
     func countTrucks(completion: @escaping (Int?, Error?) -> Void)
+    
+    // MARK: - REVIEWS
+    // All Reviews for a specific truck
+    func getReviews(truckId: String, completion: @escaping ([ReviewItem]?, Error?) -> Void)
+    
+    // Specific review by id
+    func getReview(docId: String, completion: @escaping (ReviewItem?, Error?) -> Void)
+    
+    // Add review for a specific truck
+    func addReview(truckId: String, reviewTitle: String, reviewText: String, reviewStarRating: Int, completion: @escaping (ReviewItem?, Error?) -> Void)
+    
+    // Update a specific review
+    func updateReview(docId: String, truckId: String?, reviewTitle: String?, reviewText: String?, starRating: Int?, completion: @escaping (ReviewItem?, Error?) -> Void)
+    
+    // Delete specific review
+    func deleteReview(docId: String, completion: @escaping (Error?) -> Void)
+    
+    // Count of ALL reviews
+    func countReviews(completion: @escaping (Int?, Error?) -> Void)
+    
+    // Count of reviews for a SPECIFIC truck
+    func countReviews(truckId: String, completion: @escaping (Int?, Error?) -> Void)
+    
+    // Average star rating for a specific truck
+    func averageRating(truckId: String, completion: @escaping (Int?, Error?) -> Void)
 }

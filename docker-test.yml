@@ -12,6 +12,6 @@ app:
     - "8080:8080"
   volumes:
     - .:/root/FoodTruckAPI
-  command: bash -c "cd /root/FoodTruckAPI && swift build --clean && swift build --configuration release && ./.build/release/FoodTruckServer"
+  command: bash -c "cd /root/FoodTruckAPI && swift build --clean && swift build && swift test"
   links:
     - db:localhost

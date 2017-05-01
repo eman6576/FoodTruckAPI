@@ -15,6 +15,7 @@ public final class FoodTruckController {
     public let trucks: FoodTruckAPI
     public let router = Router()
     public let trucksPath = "api/v1/trucks"
+    public let reviewsPath = "api/v1/reviews"
     
     public init(backend: FoodTruckAPI) {
         trucks = backend
@@ -23,6 +24,7 @@ public final class FoodTruckController {
     
     public func routeSetup() {
         router.all("/*", middleware: BodyParser())
+        
         // Food Truck Handling
         // All Trucks
         router.get(trucksPath, handler: getTrucks)
@@ -36,6 +38,24 @@ public final class FoodTruckController {
         router.delete("\(trucksPath)/:id", handler: deleteTruckById)
         // Update Truck (PUT)
         router.put("\(trucksPath)/:id", handler: updateTruckById)
+        
+        // Reviews Handling
+        // Get all reviews for a specific truck
+        router.get("\(trucksPath)/reviews/:id", handler: getAllReviewsForTruck)
+        // Get specific review
+        router.get("\(reviewsPath)/:id", handler: getReviewById)
+        // Add review
+        router.post("\(reviewsPath)/:id", handler: addReviewForATruck)
+        // Update review (PUT)
+        router.put("\(reviewsPath)/:id", handler: updateReviewById)
+        // Delete review
+        router.delete("\(reviewsPath)/:id", handler: deleteReviewById)
+        // Reviews Count
+        router.get("\(reviewsPath)/count", handler: getReviewsCount)
+        // Reviews count for specific truck
+        router.get("\(reviewsPath)/count/:id", handler: getReviewCountForTruck)
+        // Average star rating for truck
+        router.get("\(reviewsPath)/rating/:id", handler: getAverageRatingForTruck)
     }
     
     private func getTrucks(request: RouterRequest, response: RouterResponse, next: () -> Void) {
@@ -212,5 +232,126 @@ public final class FoodTruckController {
                 Log.error("Communications Error")
             }
         }
+    }
+    
+    private func getAllReviewsForTruck(request: RouterRequest, response: RouterResponse, next: () -> Void) {
+        guard let truckId = request.parameters["id"] else {
+            response.status(.badRequest)
+            Log.warning("ID not found in request")
+            return
+        }
+        trucks.getReviews(truckId: truckId) { (reviews, error) in
+            do {
+                guard error == nil else {
+                    try response.status(.badRequest).end()
+                    Log.error(error.debugDescription)
+                    return
+                }
+                guard let reviews = reviews else {
+                    try response.status(.internalServerError).end()
+                    return
+                }
+                let json = JSON(reviews.toDict())
+                try response.status(.OK).send(json: json).end()
+            } catch {
+                Log.error("Communications Error")
+            }
+        }
+    }
+    
+    private func getReviewById(request: RouterRequest, response: RouterResponse, next: () -> Void) {
+        guard let docId = request.parameters["id"] else {
+            response.status(.badRequest)
+            Log.error("No ID Supplied")
+            return
+        }
+        trucks.getReview(docId: docId) { (review, error) in
+            do {
+                guard error == nil else {
+                    try response.status(.badRequest).end()
+                    Log.error(error.debugDescription)
+                    return
+                }
+                if let review = review {
+                    let result = JSON(review.toDict())
+                    try response.status(.OK).send(json: result).end()
+                } else {
+                    Log.warning("Could not find a review by that ID")
+                    response.status(.notFound)
+                    return
+                }
+            } catch {
+                Log.error("Communications Error")
+            }
+        }
+    }
+    
+    private func addReviewForATruck(request: RouterRequest, response: RouterResponse, next: () -> Void) {
+        guard let truckId = request.parameters["id"] else {
+            response.status(.badRequest)
+            Log.warning("No TruckID found in request")
+            return
+        }
+        guard let body = request.body else {
+            response.status(.badRequest)
+            Log.error("No body found in request")
+            return
+        }
+        guard case let .json(json) = body else {
+            response.status(.badRequest)
+            Log.error("Invalid JSON data supplied")
+            return
+        }
+        let title: String = json["reviewtitle"].stringValue
+        let text: String = json["reviewtext"].stringValue
+        let starRating: Int = json["starrating"].intValue
+        guard title != "" else {
+            response.status(.badRequest)
+            Log.error("Necessary fields not supplied")
+            return
+        }
+        trucks.addReview(truckId: truckId, reviewTitle: title, reviewText: text, reviewStarRating: starRating) { (review, error) in
+            do {
+                guard error == nil else {
+                    try response.status(.badRequest).end()
+                    Log.error(error.debugDescription)
+                    return
+                }
+                guard let review = review else {
+                    try response.status(.internalServerError).end()
+                    Log.error("Review not found")
+                    return
+                }
+                let result = JSON(review.toDict())
+                Log.info("\(title) added to review list")
+                do {
+                    try response.status(.OK).send(json: result).end()
+                } catch {
+                    Log.error("Error sending response")
+                }
+            } catch {
+                Log.error("Communications Error")
+            }
+        }
+    }
+    
+    private func updateReviewById(request: RouterRequest, response: RouterResponse, next: () -> Void) {
+        
+    }
+    
+    private func deleteReviewById(request: RouterRequest, response: RouterResponse, next: () -> Void) {
+        
+    }
+    
+    private func getReviewsCount(request: RouterRequest, response: RouterResponse, next: () -> Void) {
+        
+    }
+    
+    private func getReviewCountForTruck(request: RouterRequest, response: RouterResponse, next: () -> Void) {
+        
+    }
+    
+    private func getAverageRatingForTruck(request: RouterRequest, response: RouterResponse, next: () -> Void) {
+        
     }
 }
